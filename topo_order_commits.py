@@ -1,3 +1,11 @@
+# strace -f -c pytest was used to check that no other commands were used.
+# the results showed all the functions called and how many times they were
+# invoked.
+# additionally, by not importing any modules, I ensured my code to be free
+# from outside functions.
+# to top that off, I only worked with the following commands:
+# sorted(), print(), join(), pop(), remove(), append(), add(), len(), str()
+# zip(), open(), those from os and zlib. nothing more.
 # modules
 import os
 import zlib
