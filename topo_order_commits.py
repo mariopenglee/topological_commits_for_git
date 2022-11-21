@@ -7,41 +7,12 @@ DEBUGGING = False
 
 
 def topo_order_commits():
-    current = os.getcwd()
-    b_found = False
-    while (b_found is False):
-        for file in os.listdir(current):
-            if file.endswith(".git"):
-                git_directory = os.path.join(current, file)
-                b_found = True
-        if(os.path.dirname(current) != "/"):
-            current = os.path.abspath(os.path.join(current, os.pardir))
-        else:
-            print("Not inside a Git repository")
-            exit(1)
-    # print(git_directory)
+    git_directory = find_repo_directory()
     branch_heads = get_branch_heads(git_directory)
-    if(DEBUGGING):
-        print("branch heads")
-        for e in branch_heads:
-            print(e)
-        print("---------------------")
     commit_graph = get_commit_graph(git_directory)
-    root_commits = set()
-    for commit in commit_graph:
-        if (len(commit_graph[commit].parents) == 0):
-            root_commits.add(commit_graph[commit])
-            if(DEBUGGING):
-                print("root commit: " + commit_graph[commit].commit_hash)
+    root_commits = get_root_commits(commit_graph)
     sorted_graph = get_topological_graph(
         commit_graph, branch_heads, root_commits)
-
-    if(DEBUGGING):
-        print("sorted graph")
-        for e in sorted_graph:
-            print(e.commit_hash)
-        print("---------------------")
-
     sticky_end = False
     last_popped = None
     while(sorted_graph):
@@ -73,16 +44,35 @@ def topo_order_commits():
         else:
             print(node.commit_hash)
         last_popped = sorted_graph.pop()
-        """
-        parents = [x for x in node.parents]
-        for parent in parents:
-            commit_graph.append(parent)
-            if(parent.commit_hash in branch_heads):
-                branch_heads[parent.commit_hash].append(branch_name)
-            else:
-                branch_heads[parent.commit_hash] = [branch_name]
-        """
     return 0
+
+
+def get_root_commits(commit_graph):
+    root_commits = set()
+    for commit in commit_graph:
+        if (len(commit_graph[commit].parents) == 0):
+            root_commits.add(commit_graph[commit])
+            if(DEBUGGING):
+                print("root commit: " + commit_graph[commit].commit_hash)
+    return root_commits
+
+
+def find_repo_directory():
+    current = os.getcwd()
+    b_found = False
+    while (b_found is False):
+        for file in os.listdir(current):
+            if file.endswith(".git"):
+                git_directory = os.path.join(current, file)
+                b_found = True
+        if(os.path.dirname(current) != "/"):
+            current = os.path.abspath(os.path.join(current, os.pardir))
+        else:
+            print("Not inside a Git repository")
+            exit(1)
+    if(DEBUGGING):
+        print("git directory: " + git_directory)
+    return git_directory
 
 
 def get_topological_graph(commit_graph, branch_heads, root_commits):
@@ -111,6 +101,11 @@ def get_topological_graph(commit_graph, branch_heads, root_commits):
         for child in node.children:
             child.parents.add(copy_commit_graph[node.commit_hash])
     purge_non_reachable(sorted_graph, branch_heads)
+    if(DEBUGGING):
+        print("sorted graph")
+        for e in sorted_graph:
+            print(e.commit_hash)
+        print("---------------------")
     return sorted_graph
 
 
@@ -205,6 +200,11 @@ def get_branch_heads(git_directory):
             else:
                 # print("garbage")
                 pass
+    if(DEBUGGING):
+        print("branch heads")
+        for e in branch_heads:
+            print(e)
+        print("---------------------")
     return branch_heads
 
 
